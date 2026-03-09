@@ -67,6 +67,10 @@ python3 {baseDir}/scripts/generate_images.py --topic-id <topic_id>
 - 封面图（PNG，16:9）
 - 正文插图（PNG，16:9）
 
+**风格参考：**
+- 如果 `reference-covers/` 目录有参考图（`ref-*.png`），会随机选一张做风格迁移
+- 没有参考图时，使用纯 text-to-image
+
 **验证点：**
 - ✅ 必须生成至少 1 张图片（封面）
 - ✅ 图片路径必须正确
@@ -207,6 +211,30 @@ callback_data:approve:20260309-01:note
 - 封面文件名必须是 `{topic_id}-note-cover.png`
 - 插图文件名必须是 `illustration-{序号:02d}.png`
 - 发布前必须先生成图片并构建 content manifest
+- **推荐在 `reference-covers/` 目录放 10-20 张爆款封面作为风格参考**
+
+## 爆款封面库
+
+在 `reference-covers/` 目录维护参考图：
+
+```bash
+reference-covers/
+├── README.md
+├── ref-01.png  # note.com 热门文章封面
+├── ref-02.png
+└── ref-03.png
+```
+
+**推荐来源：**
+- note.com 热门榜前 20
+- 你自己的高赞文章
+- 同领域大 V 的爆款封面
+
+**质量标准：**
+- 16:9 比例
+- 高清（≥ 1280x720）
+- 视觉风格统一
+- 无文字或文字很少
 
 ## 环境变量
 

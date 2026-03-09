@@ -2,8 +2,10 @@
 """
 为 note 草稿生成图片（封面 + 插图）
 使用 nano-banana-pro skill (Gemini 3 Pro Image)
+支持参考图风格迁移
 """
 import json
+import random
 import subprocess
 import sys
 from pathlib import Path
@@ -12,6 +14,18 @@ IMAGE_PLAN_DIR = Path("/Users/chicho/.openclaw/workspace/output/content-pipeline
 COVERS_DIR = Path("/Users/chicho/.openclaw/workspace/output/content-pipeline/covers")
 ILLUSTRATIONS_DIR = Path("/Users/chicho/.openclaw/workspace/output/content-pipeline/illustrations")
 NANO_BANANA_SCRIPT = Path("/opt/homebrew/lib/node_modules/openclaw/skills/nano-banana-pro/scripts/generate_image.py")
+REFERENCE_COVERS_DIR = Path(__file__).parent.parent / "reference-covers"
+
+def pick_reference_cover():
+    """随机选择一张参考封面"""
+    if not REFERENCE_COVERS_DIR.exists():
+        return None
+    
+    refs = list(REFERENCE_COVERS_DIR.glob("ref-*.png")) + list(REFERENCE_COVERS_DIR.glob("ref-*.jpg"))
+    if not refs:
+        return None
+    
+    return random.choice(refs)
 
 def generate_images(topic_id: str):
     """为指定 topic 生成所有图片"""
@@ -40,15 +54,27 @@ def generate_images(topic_id: str):
             print(f"⚠️ 封面 prompt 为空", file=sys.stderr)
         else:
             cover_path = COVERS_DIR / f"{topic_id}-note-cover.png"
+            ref_cover = pick_reference_cover()
+            
             print(f"生成封面: {cover_path}", file=sys.stderr)
+            if ref_cover:
+                print(f"使用参考图: {ref_cover.name}", file=sys.stderr)
             print(f"Prompt: {prompt[:100]}...", file=sys.stderr)
             
+            cmd = [
+                "uv", "run", str(NANO_BANANA_SCRIPT),
+                "--prompt", prompt,
+                "--filename", str(cover_path),
+                "--aspect-ratio", "16:9",
+                "--resolution", "1K"
+            ]
+            
+            # 如果有参考图，使用 image-to-image
+            if ref_cover:
+                cmd.extend(["-i", str(ref_cover)])
+            
             result = subprocess.run(
-                ["uv", "run", str(NANO_BANANA_SCRIPT),
-                 "--prompt", prompt,
-                 "--filename", str(cover_path),
-                 "--aspect-ratio", "16:9",
-                 "--resolution", "1K"],
+                cmd,
                 capture_output=True,
                 text=True,
                 timeout=120
