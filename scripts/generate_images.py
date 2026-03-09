@@ -27,6 +27,41 @@ def pick_reference_cover():
     
     return random.choice(refs)
 
+def generate_viral_cover_prompt(title: str, topic: str) -> str:
+    """生成爆款风格的封面 prompt"""
+    prompt = f"""为 note.com 文章生成一个吸引眼球的封面图 prompt（Gemini 图片生成）。
+
+文章标题：{title}
+主题：{topic}
+
+参考爆款风格：
+- 配色：深色底（深蓝/黑色）+ 荧光色文字（青色/黄色/红色）
+- 风格：YouTube 缩略图风格，高对比度，信息密度高
+- 元素：科技感、神经网络、发光效果、3D 字体
+- 文字：粗体黑体，加描边/阴影，居中或左右分割
+- 整体：赛博朋克风或高饱和撞色
+
+要求：
+1. 英文 prompt
+2. 适合 16:9 比例
+3. 突出主题关键词
+4. 视觉冲击力强
+
+只输出 prompt，不要其他内容。"""
+    
+    try:
+        result = subprocess.run(
+            ["gemini", prompt],
+            capture_output=True,
+            text=True,
+            timeout=15,
+        )
+        return result.stdout.strip()
+    except Exception:
+        # fallback
+        return "Futuristic AI technology concept, neural networks, glowing cyan and purple lines, sleek, high-end, 8k, minimalistic, dark background with neon accents"
+
+
 def generate_images(topic_id: str):
     """为指定 topic 生成所有图片"""
     # 加载 image plan
@@ -38,6 +73,9 @@ def generate_images(topic_id: str):
     with open(plan_file) as f:
         plan = json.load(f)
     
+    title = plan.get("title", "")
+    topic = plan.get("article_type", "")
+    
     # 创建输出目录
     COVERS_DIR.mkdir(parents=True, exist_ok=True)
     topic_illustrations_dir = ILLUSTRATIONS_DIR / topic_id
@@ -45,46 +83,33 @@ def generate_images(topic_id: str):
     
     generated = []
     
-    # 1. 生成封面
-    cover_recs = plan.get("cover_recommendations", [])
-    if cover_recs:
-        cover = cover_recs[0]  # 使用第一个推荐
-        prompt = cover.get("rendered_prompt_positive", "") or cover.get("prompt", "")
-        if not prompt:
-            print(f"⚠️ 封面 prompt 为空", file=sys.stderr)
-        else:
-            cover_path = COVERS_DIR / f"{topic_id}-note-cover.png"
-            ref_cover = pick_reference_cover()
-            
-            print(f"生成封面: {cover_path}", file=sys.stderr)
-            if ref_cover:
-                print(f"使用参考图: {ref_cover.name}", file=sys.stderr)
-            print(f"Prompt: {prompt[:100]}...", file=sys.stderr)
-            
-            cmd = [
-                "uv", "run", str(NANO_BANANA_SCRIPT),
-                "--prompt", prompt,
-                "--filename", str(cover_path),
-                "--aspect-ratio", "16:9",
-                "--resolution", "1K"
-            ]
-            
-            # 如果有参考图，使用 image-to-image
-            if ref_cover:
-                cmd.extend(["-i", str(ref_cover)])
-            
-            result = subprocess.run(
-                cmd,
-                capture_output=True,
-                text=True,
-                timeout=120
-            )
-            
-            if result.returncode == 0 and cover_path.exists():
-                print(f"✅ 封面已生成: {cover_path}", file=sys.stderr)
-                generated.append(str(cover_path))
-            else:
-                print(f"❌ 封面生成失败: {result.stderr}", file=sys.stderr)
+    # 1. 生成封面（使用爆款风格 prompt）
+    cover_path = COVERS_DIR / f"{topic_id}-note-cover.png"
+    viral_prompt = generate_viral_cover_prompt(title, topic)
+    
+    print(f"生成封面: {cover_path}", file=sys.stderr)
+    print(f"Prompt: {viral_prompt[:100]}...", file=sys.stderr)
+    
+    cmd = [
+        "uv", "run", str(NANO_BANANA_SCRIPT),
+        "--prompt", viral_prompt,
+        "--filename", str(cover_path),
+        "--aspect-ratio", "16:9",
+        "--resolution", "1K"
+    ]
+    
+    result = subprocess.run(
+        cmd,
+        capture_output=True,
+        text=True,
+        timeout=120
+    )
+    
+    if result.returncode == 0 and cover_path.exists():
+        print(f"✅ 封面已生成: {cover_path}", file=sys.stderr)
+        generated.append(str(cover_path))
+    else:
+        print(f"❌ 封面生成失败: {result.stderr}", file=sys.stderr)
     
     # 2. 生成插图
     illustration_recs = plan.get("illustration_recommendations", [])

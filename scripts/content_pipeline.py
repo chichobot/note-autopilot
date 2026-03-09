@@ -3487,17 +3487,33 @@ def render_note_markdown(topic: dict[str, Any]) -> str:
     risk_flags = localize_risk_flags_for_note(topic.get("risk_flags", []))
     risk_str = "、".join(risk_flags) if risk_flags else "特になし"
     
-    # 提取核心标题
-    if "小紅書爆款" in angle:
-        core_title = angle.replace("[小紅書爆款] ", "").strip()
-        # 如果标题包含中文，使用通用日文标题
-        if re.search(r'[\u4e00-\u9fff]', core_title):
-            core_title = "AI初心者が知っておくべき基礎知識"
-    else:
-        core_title = angle
+    # 用 LLM 生成纯日文标题
+    prompt = f"""根据以下主题，生成一个吸引人的日文标题（note.com 风格）。
+
+主题：{angle}
+受众：{audience}
+
+要求：
+1. 必须是纯日文（可以有汉字，但不能有中文词汇或英文）
+2. 使用爆款公式：【完全保存版】核心主题｜初心者が3日で実践できる完全ガイド
+3. 核心主题要简洁有力，突出痛点或收益
+4. 不要包含 [小红书]、[Twitter]、[Reddit] 等平台标签
+
+只输出标题，不要其他内容。"""
     
-    # 爆款标题公式：数字 + 情绪 + 痛点 + 反直觉
-    viral_title = f"【完全保存版】{core_title}｜初心者が3日で実践できる完全ガイド"
+    try:
+        result = subprocess.run(
+            ["gemini", prompt],
+            capture_output=True,
+            text=True,
+            timeout=15,
+        )
+        viral_title = result.stdout.strip()
+        # 如果生成失败或包含非日文，用默认标题
+        if not viral_title or not is_likely_japanese_text(viral_title):
+            viral_title = "【完全保存版】AI活用の基礎｜初心者が3日で実践できる完全ガイド"
+    except Exception:
+        viral_title = "【完全保存版】AI活用の基礎｜初心者が3日で実践できる完全ガイド"
 
     return (
         f"# {viral_title}\n\n"
