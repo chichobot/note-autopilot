@@ -3151,7 +3151,28 @@ def normalize_japanese_audience(audience: str) -> str:
 
 
 def is_likely_japanese_text(text: str) -> bool:
-    return bool(re.search(r"[\u3040-\u30ff]", text))
+    """检查文本是否主要是日文"""
+    # 必须有假名（日文特征）
+    has_hiragana = bool(re.search(r"[\u3040-\u309f]", text))
+    if not has_hiragana:
+        return False
+    
+    # 检测明显的中文特征
+    chinese_patterns = [
+        r"小红书",
+        r"原来",
+        r"这么",
+        r"一直",
+        r"被蒙在鼓里",
+        r"[\u3001\u3002\uff0c\uff1a\uff1b\uff01\uff1f\u201c\u201d\u2018\u2019\u300a\u300b]",  # 中文标点（但日文也用）
+    ]
+    
+    # 如果匹配到明显的中文词汇，拒绝
+    for pattern in chinese_patterns[:5]:  # 只检查词汇，不检查标点
+        if re.search(pattern, text):
+            return False
+    
+    return True
 
 
 def translate_risk_flag_to_ja(flag: str) -> str:
