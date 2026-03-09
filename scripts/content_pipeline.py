@@ -3151,28 +3151,37 @@ def normalize_japanese_audience(audience: str) -> str:
 
 
 def is_likely_japanese_text(text: str) -> bool:
-    """检查文本是否主要是日文"""
-    # 必须有假名（日文特征）
+    """检查文本是否主要是日文（使用 LLM 判断）"""
+    # 快速检查：必须有假名
     has_hiragana = bool(re.search(r"[\u3040-\u309f]", text))
     if not has_hiragana:
         return False
     
-    # 检测明显的中文特征
-    chinese_patterns = [
-        r"小红书",
-        r"原来",
-        r"这么",
-        r"一直",
-        r"被蒙在鼓里",
-        r"[\u3001\u3002\uff0c\uff1a\uff1b\uff01\uff1f\u201c\u201d\u2018\u2019\u300a\u300b]",  # 中文标点（但日文也用）
-    ]
+    # 使用 gemini 快速判断
+    prompt = f"""判断以下文本是否主要是日文（允许少量汉字，但不能有明显的中文词汇或句子）。
+
+文本：
+{text[:500]}
+
+只回答 YES 或 NO。
+- YES：主要是日文
+- NO：包含明显中文或不是日文
+
+回答："""
     
-    # 如果匹配到明显的中文词汇，拒绝
-    for pattern in chinese_patterns[:5]:  # 只检查词汇，不检查标点
-        if re.search(pattern, text):
-            return False
-    
-    return True
+    try:
+        result = subprocess.run(
+            ["gemini", prompt],
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+        answer = result.stdout.strip().upper()
+        return "YES" in answer
+    except Exception:
+        # fallback：如果 gemini 失败，用简单规则
+        chinese_words = ["小红书", "原来", "这么", "一直", "被蒙在鼓里"]
+        return not any(word in text for word in chinese_words)
 
 
 def translate_risk_flag_to_ja(flag: str) -> str:
