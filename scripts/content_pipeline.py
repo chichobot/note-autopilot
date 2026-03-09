@@ -2273,6 +2273,114 @@ def _parse_twclaw_search(output: str, query: str) -> list[dict[str, Any]]:
     return candidates
 
 
+def _fetch_twitter_browser(queries: list[str]) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    """
+    Fetch Twitter/X content using playwright (no API key needed).
+    Searches for English keywords and extracts trending topics.
+    """
+    all_candidates = []
+    errors = []
+    
+    try:
+        from playwright.sync_api import sync_playwright, TimeoutError as PlaywrightTimeout
+    except ImportError:
+        print("[browser] playwright not installed, skipping browser method", file=sys.stderr)
+        health = _make_source_health(
+            "dependency_missing",
+            stage="browser_search",
+            error_code="PLAYWRIGHT_NOT_INSTALLED",
+            message="playwright not installed, falling back to other sources",
+            details={"items_collected": 0, "errors": ["playwright_not_installed"]},
+        )
+        return [], health
+    
+    for query in queries:
+        try:
+            with sync_playwright() as p:
+                browser = p.chromium.launch(headless=True)
+                context = browser.new_context(
+                    user_agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36"
+                )
+                page = context.new_page()
+                
+                # Search Twitter (no login required for public content)
+                search_url = f"https://twitter.com/search?q={query.replace(' ', '%20')}&src=typed_query&f=live"
+                print(f"[browser] twitter search '{query}': {search_url}", file=sys.stderr)
+                
+                try:
+                    page.goto(search_url, timeout=15000, wait_until="domcontentloaded")
+                    page.wait_for_timeout(3000)  # Wait for dynamic content
+                    
+                    # Extract tweet text from articles
+                    tweets = page.query_selector_all('article[data-testid="tweet"]')
+                    
+                    for i, tweet in enumerate(tweets[:5]):  # Limit to 5 per query
+                        try:
+                            # Extract tweet text
+                            text_elem = tweet.query_selector('[data-testid="tweetText"]')
+                            if not text_elem:
+                                continue
+                            
+                            tweet_text = text_elem.inner_text()
+                            if len(tweet_text) < 20:  # Skip very short tweets
+                                continue
+                            
+                            # Extract engagement metrics (if available)
+                            engagement = 0
+                            try:
+                                likes_elem = tweet.query_selector('[data-testid="like"]')
+                                if likes_elem:
+                                    likes_text = likes_elem.get_attribute("aria-label") or ""
+                                    likes_match = re.search(r"(\d+)", likes_text)
+                                    if likes_match:
+                                        engagement += int(likes_match.group(1))
+                            except:
+                                pass
+                            
+                            # Truncate for angle
+                            angle_text = tweet_text[:120].rstrip()
+                            if len(tweet_text) > 120:
+                                angle_text += "…"
+                            
+                            all_candidates.append({
+                                "source": "twitter_browser",
+                                "angle": f"[X/{query}] {angle_text}",
+                                "audience": "AI初心者・グローバル視点",
+                                "evidence_urls": [search_url],
+                                "risk_flags": ["英語コンテンツ", "翻訳が必要"],
+                                "engagement": max(engagement, 50),  # Minimum score
+                            })
+                            
+                        except Exception as e:
+                            print(f"[browser] failed to parse tweet {i}: {e}", file=sys.stderr)
+                            continue
+                    
+                    print(f"[browser] twitter search '{query}': extracted {len([c for c in all_candidates if query in c['angle']])} tweets", file=sys.stderr)
+                    
+                except PlaywrightTimeout:
+                    errors.append(f"search:{query}:timeout")
+                    print(f"[browser] twitter search '{query}': timeout", file=sys.stderr)
+                except Exception as e:
+                    errors.append(f"search:{query}:{e}")
+                    print(f"[browser] twitter search '{query}': {e}", file=sys.stderr)
+                finally:
+                    browser.close()
+                    
+        except Exception as e:
+            errors.append(f"search:{query}:{e}")
+            print(f"[browser] twitter search '{query}' failed: {e}", file=sys.stderr)
+    
+    health = _make_source_health(
+        "ok" if all_candidates else ("empty" if not errors else "feed_failed"),
+        stage="browser_search",
+        error_code="BROWSER_SEARCH_FAILED" if errors and not all_candidates else "",
+        message=f"collected {len(all_candidates)} twitter candidates via browser" if all_candidates else "browser search returned no candidates",
+        details={"items_collected": len(all_candidates), "errors": errors},
+    )
+    
+    return all_candidates, health
+
+
 def _parse_reddit_posts(output: str, subreddit: str) -> list[dict[str, Any]]:
     """Parse reddit-cli posts output."""
     candidates = []
@@ -2765,35 +2873,59 @@ def fetch_real_topics(profile: str = "full") -> tuple[list[dict[str, Any]], dict
                 )
 
     # --- c) X/Twitter trending + search ---
+    # Try browser-based search first (no API key needed), fallback to twclaw if available
     x_items = 0
     x_errors: list[str] = []
-    try:
-        out = _run_cli(["twclaw", "trending", "-n", "10"])
-        parsed = _parse_twclaw_trending(out)
-        x_items += len(parsed)
-        all_candidates.extend(parsed)
-        print(f"[topic_scan] twclaw trending: {len(parsed)} items", file=sys.stderr)
-    except Exception as e:
-        x_errors.append(f"trending:{e}")
-        print(f"[topic_scan] twclaw trending failed: {e}", file=sys.stderr)
-
-    for query in ["AI for beginners", "getting started with AI"]:
+    x_method = "none"
+    
+    # English keywords for broader reach (not limited to Japanese)
+    twitter_queries = [
+        "AI for beginners",
+        "getting started with AI",
+        "ChatGPT tutorial",
+        "AI tools 2026"
+    ]
+    
+    # Try browser method first
+    browser_candidates, browser_health = _fetch_twitter_browser(twitter_queries)
+    if browser_candidates:
+        x_items += len(browser_candidates)
+        all_candidates.extend(browser_candidates)
+        x_method = "browser"
+        source_health["x"] = browser_health
+        print(f"[topic_scan] twitter browser: {len(browser_candidates)} items", file=sys.stderr)
+    else:
+        # Fallback to twclaw if available
         try:
-            out = _run_cli(["twclaw", "search", query, "-n", "5"])
-            parsed = _parse_twclaw_search(out, query)
+            out = _run_cli(["twclaw", "trending", "-n", "10"])
+            parsed = _parse_twclaw_trending(out)
             x_items += len(parsed)
             all_candidates.extend(parsed)
-            print(f"[topic_scan] twclaw search '{query}': {len(parsed)} items", file=sys.stderr)
+            x_method = "twclaw"
+            print(f"[topic_scan] twclaw trending: {len(parsed)} items", file=sys.stderr)
         except Exception as e:
-            x_errors.append(f"search:{query}:{e}")
-            print(f"[topic_scan] twclaw search '{query}' failed: {e}", file=sys.stderr)
-    source_health["x"] = _make_source_health(
-        "ok" if x_items else ("empty" if not x_errors else "feed_failed"),
-        stage="search",
-        error_code="X_SOURCE_FAILED" if x_errors and not x_items else "",
-        message=f"collected {x_items} x candidates" if x_items else "x sources returned no candidates",
-        details={"items_collected": x_items, "errors": x_errors},
-    )
+            x_errors.append(f"trending:{e}")
+            print(f"[topic_scan] twclaw trending failed: {e}", file=sys.stderr)
+
+        for query in twitter_queries[:2]:  # Limit to 2 queries for twclaw
+            try:
+                out = _run_cli(["twclaw", "search", query, "-n", "5"])
+                parsed = _parse_twclaw_search(out, query)
+                x_items += len(parsed)
+                all_candidates.extend(parsed)
+                x_method = "twclaw"
+                print(f"[topic_scan] twclaw search '{query}': {len(parsed)} items", file=sys.stderr)
+            except Exception as e:
+                x_errors.append(f"search:{query}:{e}")
+                print(f"[topic_scan] twclaw search '{query}' failed: {e}", file=sys.stderr)
+        
+        source_health["x"] = _make_source_health(
+            "ok" if x_items else ("empty" if not x_errors else "feed_failed"),
+            stage="search",
+            error_code="X_SOURCE_FAILED" if x_errors and not x_items else "",
+            message=f"collected {x_items} x candidates via {x_method}" if x_items else "x sources returned no candidates",
+            details={"items_collected": x_items, "errors": x_errors, "method": x_method},
+        )
 
     # --- d) Reddit 新手问题 ---
     reddit_items = 0

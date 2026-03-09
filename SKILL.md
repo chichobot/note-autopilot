@@ -196,11 +196,24 @@ callback_data:approve:20260309-01:note
 
 ## 依赖
 
+### 必需
 - Python 3.10+
-- requests, beautifulsoup4, lxml
+- playwright>=1.40.0（用于 note.com 发布）
 - OpenClaw message 工具（Telegram 按钮）
 - nano-banana-pro skill（图片生成，需要 GEMINI_API_KEY）
-- uv（Python 包管理器）
+
+### 可选（热点扫描数据源）
+- **Twitter/X 抓取：**
+  - 方案 A（推荐）：OpenClaw browser 工具（无需 API key）
+  - 方案 B（fallback）：twclaw CLI（需要 AISA API key）
+- **小红书抓取：** xiaohongshu-mcp（需要扫码登录）
+- **Reddit 抓取：** 公开 JSON API（无需认证）
+- **RSS Feed：** Python 标准库（无需额外依赖）
+
+### 容错机制
+- Twitter 浏览器抓取失败 → 尝试 twclaw → 跳过
+- 小红书搜索失败 → feeds 流 → 历史缓存 → 跳过
+- 所有数据源失败 → 使用模板 fallback（5 个固定选题）
 
 ## 安全注意
 
@@ -480,3 +493,97 @@ TELEGRAM_TARGET=xxx         # Telegram user ID（审批接收人）
 - 文本理解/判断 → 模型
 - 验证必须有证据
 - 失败必须分析根因
+
+---
+
+## 热点扫描数据源详解
+
+### 数据源优先级
+
+1. **小红书（最高优先级）**
+   - 搜索关键词：`AI入門`, `ChatGPT使い方`, `AI初心者`, `ゼロから始めるAI`
+   - 排序：按点赞数
+   - 超时：25 秒
+   - Fallback：搜索失败 → feeds 流 → 历史缓存（12 小时内）
+
+2. **Twitter/X（英文关键词）**
+   - **方案 A（推荐）：** OpenClaw browser 工具
+     - 无需 API key
+     - 搜索关键词：`AI for beginners`, `getting started with AI`, `ChatGPT tutorial`, `AI tools 2026`
+     - 不限于日文，覆盖全球英文内容
+   - **方案 B（fallback）：** twclaw CLI
+     - 需要 AISA API key
+     - trending（热门话题）+ search（关键词搜索）
+
+3. **Reddit（英文社区）**
+   - 子版块：`r/ChatGPT`, `r/artificial`, `r/MachineLearning`
+   - 公开 JSON API，无需认证
+   - 每个子版块前 5 条
+
+4. **RSS Feed（日本博客）**
+   - 从 `.env` 配置的日本科技/AI 博客
+   - 超时：12 秒
+   - 每个 feed 最多 5 条
+
+### 评分算法
+
+```python
+engagement_score = log(engagement) * 1.2  # 对数缩放
+rank_penalty = rank * 0.08                # 排名衰减
+final_score = max(engagement_score - rank_penalty, 1.0)
+```
+
+### 容错机制（多层 Fallback）
+
+```
+小红书搜索（优先级最高）
+  ↓ 失败
+小红书 feeds 流
+  ↓ 失败
+小红书历史缓存（12 小时内）
+  ↓ 失败
+Twitter 浏览器抓取
+  ↓ 失败
+Twitter twclaw（如果有 API key）
+  ↓ 失败
+Reddit + RSS Feed
+  ↓ 全部失败
+模板 fallback（5 个固定选题）
+```
+
+### 最小可用配置
+
+**即使没有任何外部 API key，热点扫描仍然可用：**
+- ✅ Reddit（公开 API，无需认证）
+- ✅ RSS Feed（公开 feed，无需认证）
+- ✅ 模板 fallback（内置 5 个固定选题）
+
+**推荐配置（提升数据质量）：**
+- 🔧 小红书：扫码登录 `xiaohongshu-mcp`
+- 🔧 Twitter：配置 AISA API key（或使用浏览器方案）
+
+### 输出格式
+
+```json
+{
+  "date": "2026-03-09",
+  "profile": "full",
+  "source_health": {
+    "xiaohongshu": {"status": "ok", "items_collected": 20},
+    "x": {"status": "ok", "method": "browser", "items_collected": 15},
+    "reddit": {"status": "ok", "items_collected": 10}
+  },
+  "candidates": [
+    {
+      "id": "20260309-01",
+      "source": "xiaohongshu",
+      "angle": "90%の人が知らないChatGPT活用術",
+      "audience": "AI初心者",
+      "score": 850,
+      "evidence_urls": ["https://xiaohongshu.com/..."],
+      "risk_flags": []
+    }
+  ]
+}
+```
+
