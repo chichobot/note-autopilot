@@ -236,6 +236,107 @@ reference-covers/
 - 视觉风格统一
 - 无文字或文字很少
 
+## 爆款封面设计方法论
+
+### 2026 年日本编辑设计趋势
+
+#### 1. 极简主义 2.0（Neo-Minimalism）
+- **特征：** 大量留白，单一视觉焦点，柔和渐变背景
+- **色彩：** 莫兰迪色系（#D4A5A5, #9FA8A3, #E5C3A6）
+- **适用：** 生活方式、个人成长、思考类内容
+- **Prompt 关键词：** `minimalist composition, generous negative space, soft gradient background, muted pastel colors, single focal point, clean editorial style`
+
+#### 2. 3D 软雕塑风格（Soft 3D）
+- **特征：** 圆润的 3D 物体，玻璃/陶瓷质感，柔和光影
+- **色彩：** 白色基调 + 单一强调色（#FF6B6B, #4ECDC4）
+- **适用：** 科技、商业、创新类内容
+- **Prompt 关键词：** `soft 3D render, rounded geometric shapes, glass material, ceramic texture, studio lighting, Blender style, pastel colors, floating objects`
+
+#### 3. 扁平插画 + 纹理叠加
+- **特征：** 扁平设计 + 细微纹理（纸张、布料），手绘感
+- **色彩：** 温暖色调（#FFB347, #77DD77, #FFD1DC）
+- **适用：** 教育、生活方式、亲子类内容
+- **Prompt 关键词：** `flat illustration, paper texture overlay, hand-drawn feel, warm color palette, editorial illustration, Japanese lifestyle magazine style`
+
+#### 4. 渐变网格（Gradient Mesh）
+- **特征：** 流动的色彩过渡，抽象但有方向感
+- **色彩：** 双色或三色渐变（#667EEA → #764BA2, #F093FB → #F5576C）
+- **适用：** AI、未来、科技类内容
+- **Prompt 关键词：** `gradient mesh, fluid color transition, abstract waves, holographic effect, modern tech aesthetic, vibrant gradients`
+
+#### 5. 数据可视化美学
+- **特征：** 图表、曲线、网格作为装饰元素
+- **色彩：** 深色背景 + 荧光强调（#00D9FF, #FF006E）
+- **适用：** 商业、分析、数据类内容
+- **Prompt 关键词：** `data visualization aesthetic, abstract charts, grid patterns, infographic style, professional business design, clean lines, dark background`
+
+### 爆款 Prompt 构建公式
+
+```
+[风格基调] + [主题元素] + [构图规则] + [色彩方案] + [质感细节] + [参考风格]
+```
+
+**示例（极简主义）：**
+```
+Minimalist editorial cover for a note article about [主题].
+Composition: Single centered focal point with generous negative space, rule of thirds.
+Colors: Muted pastel palette (#D4A5A5, #9FA8A3, #E5C3A6), soft gradient background.
+Style: Clean Japanese editorial design, premium magazine aesthetic, no text overlay.
+Technical: 16:9 aspect ratio, high resolution, suitable for thumbnail.
+Reference: Kinfolk magazine, Cereal magazine, Japanese design awards.
+```
+
+**示例（3D 软雕塑）：**
+```
+Soft 3D render editorial cover for [主题].
+Objects: Rounded geometric shapes (sphere, cylinder, torus), floating composition.
+Material: Frosted glass, ceramic texture, subtle reflections.
+Lighting: Studio lighting, soft shadows, pastel color accents (#FF6B6B).
+Style: Blender/C4D aesthetic, modern minimalist, no text.
+Technical: 16:9, 1920x1080, clean background.
+Reference: Dribbble 3D illustrations, Behance featured work.
+```
+
+### 智能体使用指南
+
+**当生成 image_plan 时：**
+
+1. **分析文章主题**，选择最匹配的设计风格：
+   - 生活/思考 → 极简主义
+   - 科技/商业 → 3D 软雕塑
+   - 教育/亲子 → 扁平插画
+   - AI/未来 → 渐变网格
+   - 数据/分析 → 数据可视化
+
+2. **使用爆款 Prompt 构建公式**，填入：
+   - 风格基调（从上面 5 种选）
+   - 主题元素（从文章标题提取）
+   - 构图规则（居中/三分法/对角线）
+   - 色彩方案（具体 HEX 代码）
+   - 质感细节（材质、光影）
+   - 参考风格（Dribbble, Behance, 日本设计奖）
+
+3. **生成的 prompt 必须包含：**
+   - ✅ 具体的色彩代码（#HEX）
+   - ✅ 明确的构图规则
+   - ✅ 材质/质感描述
+   - ✅ 参考风格来源
+   - ✅ 技术规格（16:9, no text）
+
+4. **禁止使用模糊描述：**
+   - ❌ "deep blue, warm gold"（太模糊）
+   - ❌ "minimalist flat landscape"（太抽象）
+   - ❌ "clean Japanese style"（太宽泛）
+
+### 验证检查点
+
+生成 image_plan 后，必须验证：
+- [ ] prompt 长度 ≥ 150 字符
+- [ ] 包含至少 2 个具体色彩代码
+- [ ] 包含明确的构图规则
+- [ ] 包含参考风格来源
+- [ ] 包含技术规格（16:9, no text）
+
 ## 环境变量
 
 ```bash
