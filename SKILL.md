@@ -273,28 +273,79 @@ reference-covers/
 ### 爆款 Prompt 构建公式
 
 ```
-[风格基调] + [主题元素] + [构图规则] + [色彩方案] + [质感细节] + [参考风格]
+[风格基调] + [主题元素] + [构图规则] + [色彩方案] + [质感细节] + [文字排版] + [参考风格]
 ```
 
-**示例（极简主义）：**
+**重要：note.com 爆款封面必须包含醒目的文字标题！**
+
+### 文字排版规范（参考小红书爆款封面）
+
+#### 1. 文字位置
+- **上三分之一**：适合短标题（5-8 字）
+- **居中**：适合中等标题（8-12 字）
+- **左对齐/右对齐**：适合长标题（12-20 字）
+
+#### 2. 字体风格
+- **粗黑体**：冲击力强，适合数字、结论类（"90%的人不知道"）
+- **圆体**：亲和力强，适合生活、教育类
+- **宋体/明朝体**：专业感，适合商业、分析类
+
+#### 3. 文字颜色
+- **白色 + 黑色描边**：万能，任何背景都清晰
+- **黄色/橙色**：警示感，适合"避坑"、"注意"类
+- **红色**：紧迫感，适合"限时"、"必看"类
+- **深色背景 + 荧光色文字**：科技感
+
+#### 4. 文字大小层级
+- **主标题**：占画面 30-40% 高度
+- **副标题/数字**：主标题的 50-60%
+- **装饰文字/标签**：主标题的 30-40%
+
+#### 5. 文字效果
+- **渐变填充**：时尚感（粉→紫，蓝→绿）
+- **阴影/发光**：立体感
+- **描边**：清晰度
+- **倾斜/旋转**：动感（慎用，容易乱）
+
+### Prompt 示例（带文字排版）
+
+**示例 1（极简主义 + 醒目标题）：**
 ```
 Minimalist editorial cover for a note article about [主题].
-Composition: Single centered focal point with generous negative space, rule of thirds.
-Colors: Muted pastel palette (#D4A5A5, #9FA8A3, #E5C3A6), soft gradient background.
-Style: Clean Japanese editorial design, premium magazine aesthetic, no text overlay.
-Technical: 16:9 aspect ratio, high resolution, suitable for thumbnail.
-Reference: Kinfolk magazine, Cereal magazine, Japanese design awards.
+Visual: Soft gradient background (#F5F5F5 → #E8E8E8), single centered geometric shape (circle or rounded rectangle).
+Typography: Bold sans-serif title in Japanese, centered, occupying 35% of canvas height.
+Text style: White text with subtle black stroke (2px), clean and readable.
+Text content: "[文章标题]" (e.g., "90%の人が知らないAI活用術")
+Composition: Title in upper third, visual element in lower two-thirds, generous negative space.
+Colors: Muted pastels (#D4A5A5, #9FA8A3), text in white with black outline.
+Style: Clean Japanese editorial design, Kinfolk magazine aesthetic.
+Technical: 16:9, high resolution, text must be prominent and legible.
 ```
 
-**示例（3D 软雕塑）：**
+**示例 2（3D 软雕塑 + 数字冲击）：**
 ```
 Soft 3D render editorial cover for [主题].
-Objects: Rounded geometric shapes (sphere, cylinder, torus), floating composition.
-Material: Frosted glass, ceramic texture, subtle reflections.
-Lighting: Studio lighting, soft shadows, pastel color accents (#FF6B6B).
-Style: Blender/C4D aesthetic, modern minimalist, no text.
-Technical: 16:9, 1920x1080, clean background.
-Reference: Dribbble 3D illustrations, Behance featured work.
+Visual: Floating rounded 3D objects (sphere, torus), frosted glass material, pastel pink (#FFB6C1) accent.
+Typography: Extra bold sans-serif, large number "90%" in top-left corner (占 40% 高度).
+Text style: White number with pink gradient fill, soft drop shadow.
+Secondary text: "の人が知らない" in smaller size below the number.
+Composition: Number dominates top-left, 3D objects in bottom-right, diagonal visual flow.
+Lighting: Studio lighting, soft shadows, clean white background.
+Style: Blender/C4D aesthetic, modern minimalist, Dribbble featured work.
+Technical: 16:9, 1920x1080, text must be sharp and eye-catching.
+```
+
+**示例 3（扁平插画 + 情感标题）：**
+```
+Flat illustration editorial cover for [主题].
+Visual: Simple flat illustration (laptop, coffee cup, plant), warm color palette (#FFB347, #77DD77).
+Typography: Rounded sans-serif (ゴシック体), centered title in two lines.
+Text style: Dark navy (#2C3E50) text with cream (#FFF8E7) background box, rounded corners.
+Text content: "[情感化标题]" (e.g., "疲れた心を癒す / AI活用法")
+Composition: Title in center with semi-transparent background box, illustration elements around edges.
+Paper texture overlay for warmth.
+Style: Japanese lifestyle magazine, hand-drawn feel, approachable and friendly.
+Technical: 16:9, text must be warm and inviting, easy to read at thumbnail size.
 ```
 
 ### 智能体使用指南
@@ -308,34 +359,66 @@ Reference: Dribbble 3D illustrations, Behance featured work.
    - AI/未来 → 渐变网格
    - 数据/分析 → 数据可视化
 
-2. **使用爆款 Prompt 构建公式**，填入：
+2. **提取文章标题的核心信息**：
+   - 如果有数字（"90%"、"3个方法"），必须突出显示
+   - 如果有情感词（"疲れた"、"癒す"），用温暖色调
+   - 如果有对比（"知らない vs 知ってる"），用视觉层级
+
+3. **使用爆款 Prompt 构建公式**，填入：
    - 风格基调（从上面 5 种选）
    - 主题元素（从文章标题提取）
    - 构图规则（居中/三分法/对角线）
    - 色彩方案（具体 HEX 代码）
    - 质感细节（材质、光影）
+   - **文字排版（位置、大小、颜色、效果）**
    - 参考风格（Dribbble, Behance, 日本设计奖）
 
-3. **生成的 prompt 必须包含：**
+4. **生成的 prompt 必须包含：**
    - ✅ 具体的色彩代码（#HEX）
    - ✅ 明确的构图规则
    - ✅ 材质/质感描述
+   - ✅ **文字内容（日文标题）**
+   - ✅ **文字样式（字体、大小、颜色、效果）**
+   - ✅ **文字位置（上/中/下，左/中/右）**
    - ✅ 参考风格来源
-   - ✅ 技术规格（16:9, no text）
+   - ✅ 技术规格（16:9, text must be prominent）
 
-4. **禁止使用模糊描述：**
+5. **禁止使用模糊描述：**
    - ❌ "deep blue, warm gold"（太模糊）
    - ❌ "minimalist flat landscape"（太抽象）
    - ❌ "clean Japanese style"（太宽泛）
+   - ❌ "no text overlay"（note.com 必须有文字！）
+
+### 文字内容生成规则
+
+**从文章标题提取核心信息：**
+
+原标题：「完全保存版！90%の人が知らないAI活用術」
+
+**提取策略：**
+1. **数字优先**：如果有百分比/数量，放大显示
+   - 主文字：「90%」（超大，占 40% 高度）
+   - 副文字：「の人が知らない」（中等大小）
+   
+2. **关键词提取**：如果没有数字，提取核心动词/名词
+   - 主文字：「AI活用術」
+   - 副文字：「完全保存版」
+   
+3. **情感化改写**：让标题更有冲击力
+   - 原：「AIを使いこなす方法」
+   - 改：「AIで人生が変わる / 3つの秘訣」
 
 ### 验证检查点
 
 生成 image_plan 后，必须验证：
-- [ ] prompt 长度 ≥ 150 字符
+- [ ] prompt 长度 ≥ 200 字符（加入文字排版后会更长）
 - [ ] 包含至少 2 个具体色彩代码
 - [ ] 包含明确的构图规则
+- [ ] **包含具体的日文文字内容**
+- [ ] **包含文字样式描述（字体、大小、颜色）**
+- [ ] **包含文字位置描述**
 - [ ] 包含参考风格来源
-- [ ] 包含技术规格（16:9, no text）
+- [ ] 包含技术规格（16:9, text must be prominent and legible）
 
 ## 环境变量
 
